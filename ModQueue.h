@@ -21,6 +21,8 @@ typedef struct Queue {
     int *rightConstraints;
     int *board;
     int *boardFlip;
+    int *unfound;
+    int unfoundCount;
     int fails;
     
 
@@ -35,7 +37,11 @@ Node* new_node(int row, Node *prev, Node *next);
 
 void delete_queue(Queue* Q);
 void delete_node(Node* N);
-void testRows(Queue* Q, int col);
+int testRows(Queue* Q, int col, int attempts);
 void printBoard(Queue* Q);
+int fixBoard(Queue* Q, int MaxAttempts);
+
+
+
 
 #endif

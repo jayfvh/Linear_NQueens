@@ -52,12 +52,18 @@ void greedy(int n,int *rowConstraints, int *leftConstraints, int *rightConstrain
 
 int main(){
     printf("RUNNING");
-    int n = 100000000;
-    Queue *q = board(n);
-    for (int i = 0; i < n; i++){
-        testRows(q, i);
+    int n = 8;
+   int stop = 0;
+    while (!stop){
+        Queue *q = board(n);
+        for (int i = 0; i < n; i++){
+            testRows(q, i, 0);
+        }
+        printf("\nCOMPLETED WITH %d FAILS", q->fails);
+        stop = fixBoard(q,50);
+        printf("WEEEEE");
+        //printBoard(q);
+        //printf("\n SOLVING? %d", );
+        //printBoard(q);
     }
-    printf("\nCOMPLETED WITH %d FAILS", q->fails);
-    //printBoard(q);
-
 }
