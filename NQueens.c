@@ -60,6 +60,8 @@ int main(){
             testRows(q, i, 0);
         }
         printf("\nCOMPLETED WITH %d FAILS", q->fails);
+        printQueue(q);
+        printf("\n->>>>>>%d",q->length);
         stop = fixBoard(q,50);
         printf("WEEEEE");
         //printBoard(q);

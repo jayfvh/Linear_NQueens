@@ -33,6 +33,8 @@ typedef struct Queue {
 
 Queue* new_queue(int fault, int n, int *rowConstraints, int *leftConstraints, int *rightConstraints, int *board, int *boardFlip);
 Node* new_node(int row, Node *prev, Node *next);
+void insertNode(Queue* Q, int row);
+int findAndDelete(Queue* Q, int row);
 
 
 void delete_queue(Queue* Q);
@@ -40,7 +42,7 @@ void delete_node(Node* N);
 int testRows(Queue* Q, int col, int attempts);
 void printBoard(Queue* Q);
 int fixBoard(Queue* Q, int MaxAttempts);
-
+void printQueue(Queue* Q);
 
 
 
