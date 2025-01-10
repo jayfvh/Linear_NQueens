@@ -3,7 +3,7 @@
 #include <stdlib.h> // For rand() and srand()
 #include <time.h>   // For time()
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define PRINT_ARRAY(arr, size)            \
     for (int i = 0; i < size; i++) {     \
         printf("%d ", arr[i]);           \
@@ -49,12 +49,13 @@ Queue* new_queue(int fault, int n, int *rowConstraints, int *leftConstraints, in
         q->front = start;
     }
 
-    q->stop = MAX(n, fault);
+    q->stop = MIN(n, fault);
     
     return q;
 }
 
 void delete_node(Node* n){
+    
     if (n != NULL) {  //If it exists
         free(n);
     }
@@ -77,6 +78,8 @@ int testRows(Queue* Q, int col, int solve){
     int i = 0;
     Node *current = Q->front;
     while (i <= Q->stop && current){
+        printf("\n{%d} PREV NODE %d CURRENT NODE %d NEXT NODE %d",i,  current->prev, current, current->next);
+
         int row = current->row;
         int ld = row - col + (Q->n - 1);
         int rd = row + col;
@@ -84,11 +87,9 @@ int testRows(Queue* Q, int col, int solve){
         //printf("\n ATTEMPTING {%d} - ld: %d; rd: %d", row, Q->leftConstraints[ld], Q->rightConstraints[rd]);
         
         if (Q->leftConstraints[ld] == 0 && Q->rightConstraints[rd] == 0){
-            printf("YO");
             // srand(time(NULL) + clock());
             // if (rand()%5 != 0){
                 if (Q->length == 1){
-                    printf(";;");
                     Q->front = NULL;
                     Q->length = 0;
                 } else {
@@ -96,21 +97,16 @@ int testRows(Queue* Q, int col, int solve){
                     if (Q->length == 2){
                         Q->front->next = Q->front;
                         Q->front->prev = Q->front;
-                        printf("FRONT NODE %d CURRENT NODE", Q->front->row, current->row);
+                        printf("PREV NODE %d CURRENT NODE %d NEXT NODE %d", current->prev, current, current->next);
                     } else {
                         current->next->prev = current->prev;
                         current->prev->next = current->next;
                         Q->front = Q->front->next;
                     }
                 }
-                
-                printf("?");
                 delete_node(current);
-                printf("?");
+                Q->stop = MIN(Q->n, Q->fault);
                 Q->length -= 1;
-                printf("?");
-                Q->stop = MAX(Q->length, Q->fault);
-                printf("?");
                 Q->board[col] = row;
                 Q->rowConstraints[row] = col + 1;
                 Q->leftConstraints[ld] = col + 1;
@@ -177,6 +173,7 @@ int findAndDelete(Queue* Q, int row){
             }
             Q->length --;
             delete_node(current);
+            Q->stop = MIN(Q->length, Q->fault);
             return 1;
             
         }
@@ -220,18 +217,25 @@ void printQueue(Queue* Q){
 }
 
 void insertNode(Queue* Q, int row){
-    printf("EE(IN)");
+    printf("EE(IN) {%d}", Q->length);
     Node *new = new_node(row,Q->front,NULL);
     if (Q->length == 0){
         new->prev = new;
         new->next = new;
         Q->front = new;
     } else {
-        new->next = Q->front;
+        if (Q->length == 1){
+            Q->front->next = new;
+        }
         new->prev = Q->front->prev;
+        new->next = Q->front;
+        Q->front->prev = new;
+        
+        
     }
     Q->front = new;
     Q->length ++;
+    Q->stop = MIN(Q->length, Q->fault);
     return;
 }
 
@@ -299,7 +303,7 @@ int fixBoard(Queue* Q, int MaxAttempts){
                 }
 
 
-                if (!found && row + 1 == srow){
+                if (!found && row + 1 >= srow){
                     printf("\t BB");
                     if (br != 0){
                         int brow = br - 1;
