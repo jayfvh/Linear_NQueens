@@ -19,7 +19,7 @@ Node* new_node(int row, Node *prev, Node *next){
     return n;
 }
 
-Queue* new_queue(int fault, int n){
+Queue* new_queue(int fault, int n, char* fileName){
     Queue* q = (Queue*) malloc(sizeof(Queue));
     int m = n * 2 - 1;
     q->front = NULL;
@@ -34,6 +34,11 @@ Queue* new_queue(int fault, int n){
     q->unfound = (int*)malloc(sizeof(int) * 0);
     q->unfoundCount = 0;
     q->xx = 0;
+    q->file = fopen(fileName, "w");
+        if (q->file == NULL) {
+        perror("Error opening file");
+        return NULL;
+    }
 
    
     memset(q->rowConstraints, 0, q->n * sizeof (int *));
@@ -67,7 +72,7 @@ void delete_node(Node* n){
     }
 }
 
-void delete_queue(Queue* q){
+void delete_queue_verify(Queue* q){
     if (q != NULL){
         Node* at = q->front;
         while (at != NULL){
@@ -76,42 +81,40 @@ void delete_queue(Queue* q){
             at = next;
         }
 
-        free(q->board);
         free(q->leftConstraints);
         free(q->rightConstraints);
         free(q->rowConstraints);
         free(q->unfound);
+
+        if (externalVerify(q->board,q->n)){
+            printf("\nBOARD IS VERIFIED TO BE CORRECT!");
+        } else {
+            printf("\nBOARD WAS NOT VERIFIED TO BE CORRECT - FAILURE!");
+        }
+
+
+        free(q->board);
+
         free(q);
+    }
+
+    if (fclose(q->file) != 0) {
+        perror("Error closing file");
     }
 }
 
 int testRows(Queue* Q, int col, int solve){
-    // printQueue(Q);
-    // PRINT_ARRAY(Q->board,Q->n);
-    // printf("\n");
-    // PRINT_ARRAY(Q->rowConstraints,Q->n);
-    // printf("\n");
-    // PRINT_ARRAY(Q->leftConstraints,Q->n);
-    // printf("\n");
-    // PRINT_ARRAY(Q->rightConstraints,Q->n);
-    // printf("\n");
-    // PRINT_ARRAY(Q->unfound,Q->unfoundCount);
-    // printf("\n");
     int i = 0;
     Node *current = Q->front;
     while (i <= Q->stop && current){
-        //printf("\n{%d} PREV NODE %d CURRENT NODE %d NEXT NODE %d",i,  current->prev, current, current->next);
-
         int row = current->row;
         int ld = row - col + (Q->n - 1);
-        int rd = row + col;
-
-        //printf("\n ATTEMPTING {%d} - ld: %d; rd: %d", row, Q->leftConstraints[ld], Q->rightConstraints[rd]);
-        
+        int rd = row + col;        
         if (Q->leftConstraints[ld] == 0 && Q->rightConstraints[rd] == 0){
-            // srand(time(NULL) + clock());
-            // if (rand()%5 != 0){
-                findAndDelete(Q,current->row);
+                if (!findAndDelete(Q,current->row)){
+                    perror("ERROR FOUND");
+                    return 0;
+                }
                 Q->board[col] = row;
                 Q->rowConstraints[row] = col + 1;
                 Q->leftConstraints[ld] = col + 1;
@@ -121,15 +124,10 @@ int testRows(Queue* Q, int col, int solve){
                     Q->xx++;
                     printf("\n\tCOMPLETED %d0%%", Q->xx);
                 }
-
-                //printf("\nCOL [%d] ROW [%d]",col, row);
-                
                 if (solve){
-                    printf("\tSEARCHING COL %d. SOLVED WITH ROW %d;", col,row);
+                    fprintf(Q->file,"\tSEARCHING COL %d. SOLVED WITH ROW %d;", col,row);
                 }
-
                 return 1;
-            
         }
         current = current->next;
         i++;
@@ -146,10 +144,6 @@ int testRows(Queue* Q, int col, int solve){
 }
 
 int findAndDelete(Queue* Q, int row){
-    // printf("EE(FD) -- {%d}", Q->length);
-    // printf("\n\tBEFORE");
-    // printQueue(Q);
-
     if (Q->length == 0){
         printf("Queue is empty");
         return 0;
@@ -171,8 +165,6 @@ int findAndDelete(Queue* Q, int row){
             Q->length--;
             delete_node(current);
             Q->stop = MIN(Q->length, Q->fault);
-            // printf("\n\tAFTER");
-            // printQueue(Q);
             return 1;
         }
         current = current->next;
@@ -180,13 +172,14 @@ int findAndDelete(Queue* Q, int row){
 
     } while (start != current);
     printf("COULD NOT FIND row %d\n", row);
+    return 0;
 
 }
 
 int findAndReplace(Queue* Q, int row, int row2){
 
     if (Q->length == 0){
-        printf("Queue is empty");
+        printf("\nTHE QUEUE IS EMPTY\n");
         return 0;
     }
 
@@ -202,12 +195,13 @@ int findAndReplace(Queue* Q, int row, int row2){
 
     } while (start != current);
     printf("COULD NOT FIND row %d\n", row);
+    return 0;
 
 }
 
 void printQueue(Queue* Q){
     if (Q->length == 0){
-        printf("\nTHEQUEUEISEMPTY\n");
+        fprintf(Q->file,"\nTHE QUEUE IS EMPTY\n");
         return;
     }
 
@@ -215,15 +209,13 @@ void printQueue(Queue* Q){
     int i = 0;
 
     while (i < Q->length){
-        
-        printf("{%d} ", current->row);
+        fprintf(Q->file,"{%d} ", current->row);
         i += 1;
         current = current->next;
     }
 }
 
 void insertNode(Queue* Q, int row){
-    //printf("EE(IN) {%d}", Q->length);
     Node *new = new_node(row,NULL,NULL);
     if (Q->length == 0){
         new->prev = new;
@@ -234,9 +226,6 @@ void insertNode(Queue* Q, int row){
         new->next = Q->front;
         Q->front->prev->next = new;
         Q->front->prev = new;
-        
-        
-        
     }
     Q->front = new;
     Q->length ++;
@@ -250,12 +239,8 @@ int fixBoard(Queue* Q, int MaxAttempts){
     int last = Q->n;
     int xx = 0;
     while (attempts < MaxAttempts){
-        //printf("\n\nBOARD: ");
-        //PRINT_ARRAY(Q->board, Q->n);
-        printf("\n\nQUEUE: ");
+        fprintf(Q->file,"\n\nQUEUE: ");
         printQueue(Q);
-        printf("\nUNFOUND: ");
-        PRINT_ARRAY(Q->unfound, Q->unfoundCount);
         int inx = 0;
         int col = Q->unfound[0];
         int backup = 0;
@@ -264,7 +249,6 @@ int fixBoard(Queue* Q, int MaxAttempts){
             inx = rand() % (Q->unfoundCount);
             col = Q->unfound[inx]; //Random Selection
         }
-        //printf("HELLO");
         if (testRows(Q, col, 1) == 0){
             int srow = rand() % Q->n; //Begin Search At Random Position
             int row = srow; 
@@ -275,12 +259,13 @@ int fixBoard(Queue* Q, int MaxAttempts){
                 int ld = row - col + (Q->n - 1);
                 int rd = row + col;
                 if ((Q->leftConstraints[ld] != 0) + (Q->rightConstraints[rd] != 0) + (Q->rowConstraints[row] != 0) == 1){ //Since we know there are no 0 options left and there is a Queen in most rows
-                    //printf("HIT");
                     int conflict = Q->rowConstraints[row] + Q->leftConstraints[ld] + Q->rightConstraints[rd] - 1;
                     if (conflict != last){
-                        //printf("A");
                         if (Q->rowConstraints[row] == 0){
-                            findAndReplace(Q, row, Q->board[conflict]);
+                            if (!findAndReplace(Q, row, Q->board[conflict])){
+                                perror("ERROR FOUND");
+                                return 0;
+                            }
                         }
                         int cr = Q->board[conflict];
                         Q->leftConstraints[cr - conflict + (Q->n - 1)] = 0; //RESET
@@ -295,9 +280,7 @@ int fixBoard(Queue* Q, int MaxAttempts){
                         Q->rightConstraints[rd] = col + 1;
                         Q->board[conflict] = Q->n;
                         Q->board[col] = row;
-
-                        
-                        printf("\tSEARCHING COL %d; STARTED AT %d; FOUND ROW %d; CONFLICTING WITH COL %d != %d\t|", col, srow, row, conflict, last);
+                        fprintf(Q->file,"\tSEARCHING COL %d; STARTED AT %d; FOUND ROW %d; CONFLICTING WITH COL %d != %d\t|", col, srow, row, conflict, last);
                     }
                     
                 } else if (!backup && (Q->leftConstraints[ld] != 0) + (Q->rightConstraints[rd] != 0) + (Q->rowConstraints[row] != 0) == 2){
@@ -313,23 +296,26 @@ int fixBoard(Queue* Q, int MaxAttempts){
                         rd = brow + col;
                         int c1 = 0;
                         int c2 = 0;
-                        printf("\tSEARCHING COL %d; STARTED AT %d; FOUND BACKUP ROW %d -> [%d][%d][%d]\t|", col, srow, brow, Q->leftConstraints[ld], Q->rightConstraints[rd], Q->rowConstraints[brow]);
+                        fprintf(Q->file,"\tSEARCHING COL %d; STARTED AT %d; FOUND BACKUP ROW %d -> [%d][%d][%d]\t|", col, srow, brow, Q->leftConstraints[ld], Q->rightConstraints[rd], Q->rowConstraints[brow]);
                         if (Q->leftConstraints[ld] == 0){
-                            printf("-> LEFT ZERO");
+                            fprintf(Q->file,"-> LEFT ZERO");
                             insertNode(Q, Q->board[Q->rightConstraints[rd] - 1]);
                             c1 = Q->rightConstraints[rd] - 1;
                             c2 = Q->rowConstraints[brow] - 1;
                             
 
                         } else if (Q->rightConstraints[rd] == 0) {
-                            printf("-> RIGHT ZERO");
+                            fprintf(Q->file,"-> RIGHT ZERO");
                             c1 = Q->leftConstraints[ld] - 1;
                             c2 = Q->rowConstraints[brow] - 1;
 
                             insertNode(Q, Q->board[Q->leftConstraints[ld] - 1]);
                         } else {
-                            printf("-> ROW ZERO");
-                            findAndReplace(Q, brow, Q->board[Q->rightConstraints[rd] - 1]);
+                            fprintf(Q->file,"-> ROW ZERO");
+                            if (!findAndReplace(Q, brow, Q->board[Q->rightConstraints[rd] - 1])){
+                                perror("ERROR FOUND");
+                                return 0;
+                            }
                             insertNode(Q, Q->board[Q->leftConstraints[ld] - 1]);
 
                             c1 = Q->rightConstraints[rd] - 1;
@@ -372,19 +358,13 @@ int fixBoard(Queue* Q, int MaxAttempts){
                 row = (row + 1) % Q->n;
             }
         } else {
-            //printf("CC");
             if (Q->unfoundCount == 1){
                 return 1;
             } else {
-                //printf("HERE\n");
-                //PRINT_ARRAY(Q->unfound,Q->unfoundCount);
                 for (int i = inx; i < Q->unfoundCount; i++) {
                     Q->unfound[i] = Q->unfound[i + 1];
-                    //printf("SEARCHING COL %d. SOLVED ROW, %d more MISSES REMAINING\n", col, Q->unfoundCount - 1);
                 }
                 Q->unfoundCount --;
-                //printf("WERE\n");
-                //PRINT_ARRAY(Q->unfound,Q->unfoundCount);
             }
         }
         attempts ++;
@@ -395,6 +375,32 @@ int fixBoard(Queue* Q, int MaxAttempts){
 
 }
 
+int externalVerify(int* board, int n){
+    int m = n * 2 - 1;
+    int *rowConstraints = (int *) malloc(n * sizeof (int *));
+    int *rightConstraints = (int *) malloc(m * sizeof (int *));
+    int *leftConstraints = (int *) malloc(m * sizeof (int *));
+
+    memset(rowConstraints, 0, n * sizeof (int *));
+    memset(leftConstraints, 0, m * sizeof (int *));
+    memset(rightConstraints, 0, m * sizeof(int *));
+
+    for (int col = 0; col < n; col++){
+        int row = board[col];
+        rowConstraints[row] += 1;
+        rightConstraints[row + col] += 1;
+        leftConstraints[row - col + n - 1] += 1;
+    }
+
+    for (int col = 0; col < n; col++){
+        int row = board[col];
+        if (rowConstraints[row] + rightConstraints[row + col] + leftConstraints[row - col + n - 1] != 3){
+            return 0;
+        }
+    }
+    return 1;
+}
+
 int main(){
     int n;
     int fault;
@@ -402,7 +408,7 @@ int main(){
     getInput("Enter the size of the Board: ", &n);
     getInput("Enter the fault tolerance: ", &fault);
     getInput("Enter the max steps allowed: ", &steps);
-    Queue *Q = new_queue(fault, n);
+    Queue *Q = new_queue(fault, n,"debug.txt");
 
     for (int i = 0; i < n; i++){
             testRows(Q, i, 0);
@@ -417,7 +423,7 @@ int main(){
     } else {
         printf("\nSize not solvable within steps allowed");
     }
-    delete_queue(Q);
+    delete_queue_verify(Q);
 }
 
 void getInput(char* message, int* data){
