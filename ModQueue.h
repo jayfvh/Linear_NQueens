@@ -25,6 +25,7 @@ typedef struct Queue {
     int unfoundCount;
     int fails;
     int xx;
+    FILE *file;
     
 
 } Queue;
@@ -32,13 +33,13 @@ typedef struct Queue {
 
 
 
-Queue* new_queue(int fault, int n, int *rowConstraints, int *leftConstraints, int *rightConstraints, int *board, int *boardFlip);
+Queue* new_queue(int fault, int n, char* fileName);
 Node* new_node(int row, Node *prev, Node *next);
 void insertNode(Queue* Q, int row);
 int findAndDelete(Queue* Q, int row);
-
-
-void delete_queue(Queue* Q);
+int externalVerify(int* board, int n);
+void getInput(char* message, int* data);
+void delete_queue_verify(Queue* q);
 void delete_node(Node* N);
 int testRows(Queue* Q, int col, int attempts);
 void printBoard(Queue* Q);
