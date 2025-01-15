@@ -19,21 +19,26 @@ Node* new_node(int row, Node *prev, Node *next){
     return n;
 }
 
-Queue* new_queue(int fault, int n, int *rowConstraints, int *leftConstraints, int *rightConstraints, int *board, int *boardFlip){
+Queue* new_queue(int fault, int n){
     Queue* q = (Queue*) malloc(sizeof(Queue));
+    int m = n * 2 - 1;
     q->front = NULL;
     q->length = 0;
     q->fault = fault;
     q->n = n;
-    q->rowConstraints = rowConstraints;
-    q->rightConstraints = rightConstraints;
-    q->leftConstraints = leftConstraints;
-    q->board = board;
-    q->boardFlip = board;
+    q->rowConstraints = (int *) malloc(n * sizeof (int *));
+    q->rightConstraints = (int *) malloc(m * sizeof (int *));
+    q->leftConstraints = (int *) malloc(m * sizeof (int *));
+    q->board = (int *) malloc(n * sizeof(int*));
     q->fails = 0;
     q->unfound = (int*)malloc(sizeof(int) * 0);
     q->unfoundCount = 0;
     q->xx = 0;
+
+   
+    memset(q->rowConstraints, 0, q->n * sizeof (int *));
+    memset(q->leftConstraints, 0, m * sizeof (int *));
+    memset(q->rightConstraints, 0, m * sizeof(int *));
     
     if (n > 0){
         Node *start = new_node(0,NULL,NULL);
@@ -70,6 +75,12 @@ void delete_queue(Queue* q){
             delete_node(at);
             at = next;
         }
+
+        free(q->board);
+        free(q->leftConstraints);
+        free(q->rightConstraints);
+        free(q->rowConstraints);
+        free(q->unfound);
         free(q);
     }
 }
@@ -132,32 +143,6 @@ int testRows(Queue* Q, int col, int solve){
         Q->front = current->next;
     }
     return 0;
-}
-
-void printBoard(Queue* Q){
-    PRINT_ARRAY(Q->rowConstraints,Q->n);
-    char* row = (char*)malloc((Q->n * 2) + 1);
-    if (row == NULL){
-        perror("Failed to allocate memory");
-        return;
-    }
-
-    for (int i = 0; i < Q->n; i++){
-        row[i * 2] = ' ';
-        row[i * 2 + 1] = '0';
-    }
-    row[Q->n * 2] = '\0';
-    for (int i = 0; i < Q->n; i++){
-        char* row_copy = (char*)malloc((Q->n * 2) + 1);
-        strcpy(row_copy, row);
-        if (Q->board[i] < Q->n){
-            row_copy[(Q->board[i] * 2) + 1] = '1';
-        }
-        printf("\n %s ", row_copy);
-        free(row_copy);
-    }
-    free(row);
-
 }
 
 int findAndDelete(Queue* Q, int row){
@@ -408,4 +393,40 @@ int fixBoard(Queue* Q, int MaxAttempts){
     printf("EXCCEDED ATTEMPTS");
     return 0;
 
+}
+
+int main(){
+    int n;
+    int fault;
+    int steps;
+    getInput("Enter the size of the Board: ", &n);
+    getInput("Enter the fault tolerance: ", &fault);
+    getInput("Enter the max steps allowed: ", &steps);
+    Queue *Q = new_queue(fault, n);
+
+    for (int i = 0; i < n; i++){
+            testRows(Q, i, 0);
+    }
+
+    printf("\nCREATED THE GREEDY BOARD");
+
+    int solve = fixBoard(Q, steps);
+
+    if (solve){
+        printf("\nBoard Is Solved");
+    } else {
+        printf("\nSize not solvable within steps allowed");
+    }
+    delete_queue(Q);
+}
+
+void getInput(char* message, int* data){
+    do {
+        printf("\n%s",message);
+        if (scanf("%d", data) != 1){
+            while (getchar() != '\n'); //'read' all bad values to clear
+            *data = -1;
+        }
+    } while (*data <= 0);
+    
 }
