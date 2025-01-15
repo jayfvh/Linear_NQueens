@@ -55,6 +55,8 @@ Queue* new_queue(int fault, int n, char* fileName){
     memset(q->rowConstraints, 0, q->n * sizeof (int *));
     memset(q->leftConstraints, 0, m * sizeof (int *));
     memset(q->rightConstraints, 0, m * sizeof(int *));
+
+    printf("\nMemory Allocated");
     
     //Generate one node for every unused row (n)
     if (n > 0){
@@ -71,6 +73,8 @@ Queue* new_queue(int fault, int n, char* fileName){
         start->prev = q->front;
         q->front = start;
     }
+
+    printf("\nNodes Created");
 
     q->stop = MIN(n, fault); //Set the stop threshhold to the minium of fault tolerance and size of board
     
@@ -146,6 +150,7 @@ int testRows(Queue* Q, int col, int solve){
         int ld = row - col + (Q->n - 1);
         int rd = row + col;        
         if (Q->leftConstraints[ld] == 0 && Q->rightConstraints[rd] == 0){ //Row must already be 0, so check to see if other constraints are as well
+                Q->front = current;
                 if (!findAndDelete(Q,current->row)){
                     perror("ERROR FOUND");
                     return 0;
