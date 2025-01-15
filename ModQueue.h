@@ -24,6 +24,7 @@ typedef struct Queue {
     int *unfound;
     int unfoundCount;
     int fails;
+    int xx;
     
 
 } Queue;
