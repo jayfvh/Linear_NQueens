@@ -6,4 +6,8 @@ My professor, Dr. Ilias Kotsireas, was impressed by the result and encouraged me
 
 Under his guidance, I developed a new solution in C that achieved record-time performance, proving that solutions are achievable within linear time.
 
+My solution was given disinction by Laurier Faculty of Science, and published online in Lauriers Web Journal
+
 **See the attached poster for a more detailed description.**
+
+![Project Poster](NQueens___Jason_Van_Humbeck.pdf)
